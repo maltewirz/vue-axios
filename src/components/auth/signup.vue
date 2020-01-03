@@ -69,8 +69,6 @@
 </template>
 
 <script>
-  import axios from '../../axios-auth'
-  import {firebaseConfig} from '../../../secrets.js'
 
   export default {
     data () {
@@ -105,13 +103,7 @@
           hobbies: this.hobbyInputs.map(hobby => hobby.value),
           terms: this.terms
         }
-        axios.post(`/accounts:signUp?key=${firebaseConfig.apiKey}`, {
-          email: formData.email,
-          password: formData.password,
-          returnSecureToken: true
-        }) //append json for firebase
-          .then(res => console.log(res))
-          .catch(error => console.log(error))
+        this.$store.dispatch('signup', {email: formData.email, password: formData.password})
       }
     }
   }
