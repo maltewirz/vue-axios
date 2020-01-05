@@ -53,14 +53,18 @@
             <div
                     class="input"
                     v-for="(hobbyInput, index) in hobbyInputs"
+                    :class="{invalid: $v.hobbyInputs.$each[index].$error}"
                     :key="hobbyInput.id">
               <label :for="hobbyInput.id">Hobby #{{ index }}</label>
               <input
                       type="text"
                       :id="hobbyInput.id"
+                      @blur="$v.hobbyInputs.$each[index].value.$touch()"
                       v-model="hobbyInput.value">
               <button @click="onDeleteHobby(hobbyInput.id)" type="button">X</button>
             </div>
+            <p v-if="!$v.hobbyInputs.minLen">You have to specify at least {{ $v.hobbyInputs.$params.minLen.min }} hobbies</p>
+            <p v-if="!$v.hobbyInputs.required">Please add Hobbies</p>
           </div>
         </div>
          <div class="input inline" :class="{invalid: !$v.terms.$model}" >
@@ -72,7 +76,7 @@
           <label for="terms">Accept Terms of Use</label>
         </div>
         <div class="submit">
-          <button type="submit">Submit</button>
+          <button type="submit" :disabled="$v.$invalid">Submit</button>
         </div>
       </form>
     </div>
@@ -80,7 +84,8 @@
 </template>
 
 <script>
-  import { required, email, numeric, minValue, minLength, sameAs, requiredUnless } from 'vuelidate/lib/validators'
+import { required, email, numeric, minValue, minLength, sameAs, requiredUnless } from 'vuelidate/lib/validators'
+import axios from 'axios'
 import { log } from 'util'
   export default {
     data () {
@@ -97,7 +102,14 @@ import { log } from 'util'
     validations: {
       email: {
         required,
-        email
+        email,
+        unique: val => {
+          if (val === '') return true
+          return axios.get('/users.json?orderBy="email"&equalTo="' + val + '"')
+            .then(res => {
+              return Object.keys(res.data).length === 0
+            })
+        }
       },
       age: {
         required,
@@ -118,6 +130,16 @@ import { log } from 'util'
         required: requiredUnless(vm => {
           return vm.country === 'germany'
         })
+      },
+      hobbyInputs: {
+        required,
+        minLen: minLength(2),
+        $each: {
+          value: {
+            required,
+            minLen: minLength(5)
+          }
+        }
       }
     },
     methods: {
